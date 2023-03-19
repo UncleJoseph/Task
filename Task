@@ -1,0 +1,95 @@
+#include <iostream>
+#include <map>
+#include <string>
+#include <tuple>
+#include <vector>
+
+using namespace std;
+
+enum class TaskStatus {
+    NEW,         
+    IN_PROGRESS, 
+    TESTING,     
+    DONE          
+};
+enum class TaskStatus1 {
+    NEW,         
+    IN_PROGRESS, 
+    TESTING,              
+};
+
+using TasksInfo = map<TaskStatus, int>;
+
+class TeamTasks {
+public:
+    
+    void Set_dev(string person, int a, int b, int c, int d) { 
+        progers_task_info_[person][TaskStatus::NEW] = a;
+        progers_task_info_[person][TaskStatus::IN_PROGRESS] = b;
+        progers_task_info_[person][TaskStatus::TESTING] = c;
+        progers_task_info_[person][TaskStatus::DONE] = d;
+    }
+    
+    const TasksInfo& GetPersonTasksInfo(const string& person) const {
+     return progers_task_info_.at(person);
+    }
+
+    void AddNewTask(const string& person) {
+        ++progers_task_info_[person][TaskStatus::NEW];
+    }
+    
+    tuple<TasksInfo, TasksInfo> PerformPersonTasks(const string& person, int task_count) {
+        TasksInfo completed, returned;
+        if (progers_task_info_.find(person) == progers_task_info_.end())
+            return tuple(completed, returned);
+        int temporary = 0;
+        int returned_count, rn;
+        for (auto& [status, count] : progers_task_info_[person]){
+                returned_count = count - task_count - temporary;
+            if (returned_count > 0 && status != TaskStatus::DONE && task_count > 0){
+                progers_task_info_[person][static_cast<TaskStatus>((static_cast<int>(status) + 1))] += task_count;
+                if (count - temporary > 0)
+            completed[static_cast<TaskStatus>((static_cast<int>(status) + 1))] += task_count;
+                temporary = task_count;
+                count -= task_count;
+                task_count = 0;
+                returned[status] += returned_count;
+            }
+            else if (returned_count > 0 && status != TaskStatus::DONE && task_count == 0) {
+
+                returned[status] += returned_count;
+                temporary = 0;
+            }
+            else if (returned_count <= 0 && status != TaskStatus::DONE && task_count > 0) {
+                progers_task_info_[person][static_cast<TaskStatus>((static_cast<int>(status) + 1))] += count - temporary;
+                if (count - temporary > 0)
+                completed[static_cast<TaskStatus>((static_cast<int>(status) + 1))] += count - temporary;
+                task_count -= count - temporary;
+                rn = temporary;
+                temporary = count - temporary;
+                count = rn;
+            }
+    }
+        return tuple(completed, returned);
+    }
+    map <string, TasksInfo> progers_task_info_;
+};
+
+void PrintTasksInfo(TasksInfo tasks_info) {
+    cout << tasks_info[TaskStatus::NEW] << " new tasks"s
+         << ", "s << tasks_info[TaskStatus::IN_PROGRESS] << " tasks in progress"s
+         << ", "s << tasks_info[TaskStatus::TESTING] << " tasks are being tested"s
+         << ", "s << tasks_info[TaskStatus::DONE] << " tasks are done"s << endl;
+}
+
+int main() {
+    TeamTasks tasks;
+    TasksInfo updated_tasks, untouched_tasks;
+    tasks.Set_dev("Ivan"s, 4, 4, 4, 4);
+    tie(updated_tasks, untouched_tasks) = tasks.PerformPersonTasks("Ivan", 1000);
+    cout << "Updated Ivan's tasks: ";
+    PrintTasksInfo(updated_tasks);
+    cout << "Untouched Ivan's tasks: ";
+    PrintTasksInfo(untouched_tasks);
+    PrintTasksInfo(tasks.GetPersonTasksInfo("Ivan"s));
+}
